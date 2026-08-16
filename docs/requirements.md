@@ -63,16 +63,12 @@ Board・List・Cardの1:N構造とする。将来の複数ボード対応を見�
 
 ## 9. 技術スタック
 
-フロントエンドはReact + TypeScript + Vite、ドラッグ&ドロップはdnd-kitを採用。バックエンド・DBは技術選定フェーズで決定する。
+フロントエンドはReact + TypeScript + Vite、ドラッグ&ドロップはdnd-kitを採用。バックエンドはJava + Spring Boot、DBはPostgreSQL（Spring Data JPA + Flyway）を採用する。
 
 → 詳細は [技術スタック](./tech-stack.md) を参照
 
 ## 10. 未決定事項
 
-- バックエンドのフレームワーク（例：Express、Fastify等）
-- DBエンジン（例：PostgreSQL、MySQL、SQLite等）
-- ORM／DBアクセス方法、マイグレーション管理の方法
 - フロントエンド〜バックエンド間のAPI仕様（エンドポイント設計等）
-- フロントエンドのデータ取得方法（fetch直書き／React Query等のライブラリ利用の要否）
 
-上記は [画面仕様・画面遷移・ユースケース](./screens.md)・[データ構造・ER図](./database.md) を踏まえ、次の技術選定フェーズで決定する。
+上記は [画面仕様・画面遷移・ユースケース](./screens.md)・[データ構造・ER図](./database.md) を踏まえ、詳細設計フェーズで決定する。
