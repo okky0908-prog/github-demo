@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タスクボード（モック）</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1 class="app-title">タスクボード</h1>
+    <p class="mock-note">※このモックはブラウザを閉じる／リロードすると内容がリセットされます（データ永続化は本実装で対応）</p>
+  </header>
+
+  <main id="board" class="board">
+    <!-- リスト列はscript.jsで動的に描画 -->
+  </main>
+
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <h2 class="modal-title">カードを編集</h2>
+
+      <label class="field">
+        <span class="field-label">タイトル</span>
+        <input type="text" id="card-title-input" maxlength="200">
+      </label>
+
+      <label class="field">
+        <span class="field-label">説明文</span>
+        <textarea id="card-description-input" rows="4"></textarea>
+      </label>
+
+      <label class="field">
+        <span class="field-label">優先度</span>
+        <select id="card-priority-input">
+          <option value="">未設定</option>
+          <option value="high">高</option>
+          <option value="mid">中</option>
+          <option value="low">低</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span class="field-label">期限</span>
+        <input type="date" id="card-due-date-input">
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" id="card-delete-btn" class="btn btn-danger">削除</button>
+        <div class="modal-actions-right">
+          <button type="button" id="card-cancel-btn" class="btn btn-secondary">キャンセル</button>
+          <button type="button" id="card-save-btn" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
