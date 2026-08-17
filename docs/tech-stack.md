@@ -16,7 +16,7 @@
 ## バックエンド
 
 - 言語：Java（LTSバージョンを使用。2026年時点の最新LTSはJava 25）
-- フレームワーク：Spring Boot（3.x系）
+- フレームワーク：Spring Boot（4.1.x系）
 - ビルドツール：Gradle（Kotlin DSL）
   - 理由：Mavenと並ぶ標準的な選択肢。差分ビルドによりビルドが高速で、近年のSpring Boot新規プロジェクトでの採用例も多い
 - Web／API：Spring Web（spring-boot-starter-web）でRESTful API（JSON）を提供する
