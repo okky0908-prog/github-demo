@@ -1,3 +1,13 @@
 spring:
   application:
     name: backend
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:trello}
+    username: ${POSTGRES_USER:trello}
+    password: ${POSTGRES_PASSWORD:trello}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true

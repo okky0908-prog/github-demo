@@ -5,12 +5,18 @@ Trello風タスク管理アプリのバックエンド（Java + Spring Boot）�
 
 ## 現在のステータス
 
-雛形段階。`./gradlew build`（コンパイル・パッケージング）は成功する状態だが、ローカルPostgreSQLが未セットアップのため以下は未実施：
+`application.yml` に `spring.datasource.*` を追加し、Docker ComposeでローカルPostgreSQLを起動できるようにした。`bootRun` の起動確認・`BackendApplicationTests`（`@SpringBootTest`）はいずれも有効化済み。
 
-- `./gradlew bootRun` でのアプリ起動確認
-- `BackendApplicationTests`（`@SpringBootTest`によるコンテキスト起動確認。現在 `@Disabled`）
+## ローカルDB（PostgreSQL）の起動
 
-DBセットアップ後、`application.yml` に `spring.datasource.*` を追加し、上記2点を有効化する。
+リポジトリルートで以下を実行する（初回のみ `.env` の作成が必要。既に `.env` があればそのまま2から）。
+
+```
+cp ../.env.example ../.env   # リポジトリルートで実行する場合は .env.example から .env をコピー
+docker compose up -d
+```
+
+`docker compose ps` で `postgres` サービスが `healthy` になれば起動完了。停止する場合は `docker compose down`（データを保持するボリュームは残る）。
 
 ## 前提条件
 
