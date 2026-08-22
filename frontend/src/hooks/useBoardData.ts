@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchBoards, fetchCards, fetchLists } from '../api/client'
+import { createCard, fetchBoards, fetchCards, fetchLists } from '../api/client'
 import type { BoardDto, CardDto, ListDto } from '../api/types'
 
 export type BoardDataState =
@@ -21,8 +21,20 @@ function groupAndSortCards(lists: ListDto[], cards: CardDto[]): Map<string, Card
   return cardsByListId
 }
 
-export function useBoardData(): BoardDataState {
+export function useBoardData(): { state: BoardDataState; addCard: (listId: string, title: string) => Promise<void> } {
   const [state, setState] = useState<BoardDataState>({ status: 'loading' })
+
+  async function addCard(listId: string, title: string) {
+    const created = await createCard(listId, { title })
+    setState((prev) => {
+      if (prev.status !== 'ready') {
+        return prev
+      }
+      const cardsByListId = new Map(prev.cardsByListId)
+      cardsByListId.set(listId, [...(cardsByListId.get(listId) ?? []), created])
+      return { ...prev, cardsByListId }
+    })
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -61,5 +73,5 @@ export function useBoardData(): BoardDataState {
     }
   }, [])
 
-  return state
+  return { state, addCard }
 }

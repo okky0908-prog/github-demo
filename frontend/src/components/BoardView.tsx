@@ -3,7 +3,7 @@ import { ListColumn } from './ListColumn'
 import styles from './BoardView.module.css'
 
 export function BoardView() {
-  const state = useBoardData()
+  const { state, addCard } = useBoardData()
 
   if (state.status === 'loading') {
     return <div className={styles.status}>読み込み中...</div>
@@ -16,7 +16,12 @@ export function BoardView() {
   return (
     <div className={styles.board}>
       {state.lists.map((list) => (
-        <ListColumn key={list.id} list={list} cards={state.cardsByListId.get(list.id) ?? []} />
+        <ListColumn
+          key={list.id}
+          list={list}
+          cards={state.cardsByListId.get(list.id) ?? []}
+          onAddCard={addCard}
+        />
       ))}
     </div>
   )
