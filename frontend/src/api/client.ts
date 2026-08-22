@@ -19,3 +19,19 @@ export function fetchLists(boardId: string): Promise<ListDto[]> {
 export function fetchCards(): Promise<CardDto[]> {
   return getJson('/api/cards')
 }
+
+export interface CreateCardInput {
+  title: string
+}
+
+export async function createCard(listId: string, input: CreateCardInput): Promise<CardDto> {
+  const res = await fetch(`/api/lists/${listId}/cards`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) {
+    throw new Error(`カードの作成に失敗しました (status: ${res.status})`)
+  }
+  return res.json() as Promise<CardDto>
+}
