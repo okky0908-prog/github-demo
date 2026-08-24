@@ -38,3 +38,22 @@ export async function createCard(listId: string, input: CreateCardInput): Promis
   }
   return res.json() as Promise<CardDto>
 }
+
+export interface UpdateCardInput {
+  title: string
+  description?: string | null
+  priority?: Priority | null
+  dueDate?: string | null
+}
+
+export async function updateCard(cardId: string, input: UpdateCardInput): Promise<CardDto> {
+  const res = await fetch(`/api/cards/${cardId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) {
+    throw new Error(`カードの更新に失敗しました (status: ${res.status})`)
+  }
+  return res.json() as Promise<CardDto>
+}

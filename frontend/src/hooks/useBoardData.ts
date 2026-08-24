@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { createCard, fetchBoards, fetchCards, fetchLists } from '../api/client'
-import type { CreateCardInput } from '../api/client'
+import { createCard, fetchBoards, fetchCards, fetchLists, updateCard } from '../api/client'
+import type { CreateCardInput, UpdateCardInput } from '../api/client'
 import type { BoardDto, CardDto, ListDto } from '../api/types'
 
 export type BoardDataState =
@@ -25,6 +25,7 @@ function groupAndSortCards(lists: ListDto[], cards: CardDto[]): Map<string, Card
 export function useBoardData(): {
   state: BoardDataState
   addCard: (listId: string, input: CreateCardInput) => Promise<void>
+  editCard: (cardId: string, input: UpdateCardInput) => Promise<void>
 } {
   const [state, setState] = useState<BoardDataState>({ status: 'loading' })
 
@@ -36,6 +37,24 @@ export function useBoardData(): {
       }
       const cardsByListId = new Map(prev.cardsByListId)
       cardsByListId.set(listId, [...(cardsByListId.get(listId) ?? []), created])
+      return { ...prev, cardsByListId }
+    })
+  }
+
+  async function editCard(cardId: string, input: UpdateCardInput) {
+    const updated = await updateCard(cardId, input)
+    setState((prev) => {
+      if (prev.status !== 'ready') {
+        return prev
+      }
+      const cardsByListId = new Map(prev.cardsByListId)
+      const listCards = cardsByListId.get(updated.listId)
+      if (listCards) {
+        cardsByListId.set(
+          updated.listId,
+          listCards.map((card) => (card.id === updated.id ? updated : card)),
+        )
+      }
       return { ...prev, cardsByListId }
     })
   }
@@ -77,5 +96,5 @@ export function useBoardData(): {
     }
   }, [])
 
-  return { state, addCard }
+  return { state, addCard, editCard }
 }
