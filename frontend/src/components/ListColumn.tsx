@@ -21,6 +21,7 @@ export function ListColumn({
   onSortModeChange,
   onAddCard,
   onCardClick,
+  onCardDelete,
 }: {
   list: ListDto
   lists: ListDto[]
@@ -29,6 +30,7 @@ export function ListColumn({
   onSortModeChange: (mode: SortMode) => void
   onAddCard: (listId: string, input: CreateCardInput) => Promise<void>
   onCardClick: (card: CardDto) => void
+  onCardDelete: (cardId: string) => void
 }) {
   const { setNodeRef } = useDroppable({ id: list.id })
 
@@ -51,7 +53,12 @@ export function ListColumn({
       <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
         <div ref={setNodeRef} className={styles.cardList}>
           {cards.map((card) => (
-            <SortableCard key={card.id} card={card} onClick={() => onCardClick(card)} />
+            <SortableCard
+              key={card.id}
+              card={card}
+              onClick={() => onCardClick(card)}
+              onDelete={() => onCardDelete(card.id)}
+            />
           ))}
         </div>
       </SortableContext>

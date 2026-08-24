@@ -165,4 +165,26 @@ class CardControllerTest {
                         .content(requestBody))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
+
+    @Test
+    void deleteCard_削除でき残りカードのpositionが振り直される() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/cards/{cardId}", SEED_CARD_ID))
+                .andExpect(MockMvcResultMatchers.status().isNoContent());
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/lists/{listId}/cards", SEED_LIST_ID))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[?(@.id == '" + SEED_CARD_ID + "')]").doesNotExist())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(SEED_CARD2_ID.toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].position").value(0));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/cards"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[?(@.id == '" + SEED_CARD_ID + "')]").doesNotExist());
+    }
+
+    @Test
+    void deleteCard_存在しないカードIDだと404() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/cards/{cardId}", UUID.randomUUID()))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
 }

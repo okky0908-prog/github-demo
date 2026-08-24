@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import { createCard, fetchBoards, fetchCards, fetchLists, moveCard as moveCardApi, updateCard } from '../api/client'
+import {
+  createCard,
+  deleteCard as deleteCardApi,
+  fetchBoards,
+  fetchCards,
+  fetchLists,
+  moveCard as moveCardApi,
+  updateCard,
+} from '../api/client'
 import type { CreateCardInput, UpdateCardInput } from '../api/client'
 import type { BoardDto, CardDto, ListDto } from '../api/types'
 
@@ -34,6 +42,7 @@ export function useBoardData(): {
   persistCardPosition: (cardId: string, targetListId: string, targetIndex: number) => Promise<void>
   changeCardList: (cardId: string, targetListId: string) => Promise<void>
   commitSortedOrder: (targetListId: string, orderedCardIds: string[]) => Promise<void>
+  removeCard: (cardId: string) => Promise<void>
 } {
   const [state, setState] = useState<BoardDataState>({ status: 'loading' })
   const [reloadToken, setReloadToken] = useState(0)
@@ -213,6 +222,26 @@ export function useBoardData(): {
     }
   }
 
+  async function removeCard(cardId: string) {
+    await deleteCardApi(cardId)
+    setState((prev) => {
+      if (prev.status !== 'ready') {
+        return prev
+      }
+      const cardsByListId = new Map(prev.cardsByListId)
+      for (const [listId, cards] of cardsByListId) {
+        if (cards.some((card) => card.id === cardId)) {
+          cardsByListId.set(
+            listId,
+            reindexPositions(cards.filter((card) => card.id !== cardId)),
+          )
+          break
+        }
+      }
+      return { ...prev, cardsByListId }
+    })
+  }
+
   return {
     state,
     addCard,
@@ -221,5 +250,6 @@ export function useBoardData(): {
     persistCardPosition,
     changeCardList,
     commitSortedOrder,
+    removeCard,
   }
 }

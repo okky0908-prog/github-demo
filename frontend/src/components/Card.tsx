@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import type { CardDto, Priority } from '../api/types'
 import styles from './Card.module.css'
 
@@ -12,9 +13,33 @@ function formatDueDate(dueDate: string): string {
   return `期限：${dueDate.replaceAll('-', '/')}`
 }
 
-export function Card({ card, onClick }: { card: CardDto; onClick: () => void }) {
+export function Card({
+  card,
+  onClick,
+  onDelete,
+}: {
+  card: CardDto
+  onClick: () => void
+  onDelete: () => void
+}) {
+  function handleDeleteClick(event: MouseEvent) {
+    event.stopPropagation()
+    if (window.confirm(`「${card.title}」を削除しますか？`)) {
+      onDelete()
+    }
+  }
+
   return (
-    <button type="button" className={styles.card} onClick={onClick}>
+    <div className={styles.card} onClick={onClick}>
+      <button
+        type="button"
+        className={styles.deleteButton}
+        aria-label="カードを削除"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={handleDeleteClick}
+      >
+        ×
+      </button>
       {card.priority && (
         <span className={`${styles.priorityBadge} ${PRIORITY_CLASS[card.priority]}`}>
           {PRIORITY_LABEL[card.priority]}
@@ -22,6 +47,6 @@ export function Card({ card, onClick }: { card: CardDto; onClick: () => void }) 
       )}
       <div className={styles.title}>{card.title}</div>
       {card.dueDate && <div className={styles.dueDate}>{formatDueDate(card.dueDate)}</div>}
-    </button>
+    </div>
   )
 }

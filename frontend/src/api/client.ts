@@ -69,3 +69,10 @@ export async function moveCard(cardId: string, listId: string, position: number)
   }
   return res.json() as Promise<CardDto>
 }
+
+export async function deleteCard(cardId: string): Promise<void> {
+  const res = await fetch(`/api/cards/${cardId}`, { method: 'DELETE' })
+  if (!res.ok) {
+    throw new Error(`カードの削除に失敗しました (status: ${res.status})`)
+  }
+}

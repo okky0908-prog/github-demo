@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -102,6 +103,21 @@ public class CardController {
         }
 
         return CardResponse.from(card);
+    }
+
+    @DeleteMapping("/api/cards/{cardId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    public void deleteCard(@PathVariable UUID cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "card not found: " + cardId));
+        UUID listId = card.getList().getId();
+
+        cardRepository.delete(card);
+
+        List<Card> siblings = cardRepository.findByListIdOrderByPosition(listId);
+        renumber(siblings);
+        cardRepository.saveAll(siblings);
     }
 
     private static int clamp(int value, int maxExclusiveBound) {
