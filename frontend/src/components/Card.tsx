@@ -12,9 +12,9 @@ function formatDueDate(dueDate: string): string {
   return `期限：${dueDate.replaceAll('-', '/')}`
 }
 
-export function Card({ card }: { card: CardDto }) {
+export function Card({ card, onClick }: { card: CardDto; onClick: () => void }) {
   return (
-    <div className={styles.card}>
+    <button type="button" className={styles.card} onClick={onClick}>
       {card.priority && (
         <span className={`${styles.priorityBadge} ${PRIORITY_CLASS[card.priority]}`}>
           {PRIORITY_LABEL[card.priority]}
@@ -22,6 +22,6 @@ export function Card({ card }: { card: CardDto }) {
       )}
       <div className={styles.title}>{card.title}</div>
       {card.dueDate && <div className={styles.dueDate}>{formatDueDate(card.dueDate)}</div>}
-    </div>
+    </button>
   )
 }

@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,6 +48,19 @@ public class CardController {
 
         int nextPosition = cardRepository.findByListIdOrderByPosition(listId).size();
         Card card = new Card(list, request.title(), nextPosition);
+        card.setDescription(request.description());
+        card.setPriority(request.priority());
+        card.setDueDate(request.dueDate());
+
+        return CardResponse.from(cardRepository.save(card));
+    }
+
+    @PutMapping("/api/cards/{cardId}")
+    public CardResponse updateCard(@PathVariable UUID cardId, @Valid @RequestBody CardCreateRequest request) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "card not found: " + cardId));
+
+        card.setTitle(request.title());
         card.setDescription(request.description());
         card.setPriority(request.priority());
         card.setDueDate(request.dueDate());
