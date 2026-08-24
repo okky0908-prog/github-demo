@@ -57,3 +57,15 @@ export async function updateCard(cardId: string, input: UpdateCardInput): Promis
   }
   return res.json() as Promise<CardDto>
 }
+
+export async function moveCard(cardId: string, listId: string, position: number): Promise<CardDto> {
+  const res = await fetch(`/api/cards/${cardId}/position`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ listId, position }),
+  })
+  if (!res.ok) {
+    throw new Error(`カードの移動に失敗しました (status: ${res.status})`)
+  }
+  return res.json() as Promise<CardDto>
+}

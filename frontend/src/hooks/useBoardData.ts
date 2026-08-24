@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createCard, fetchBoards, fetchCards, fetchLists, updateCard } from '../api/client'
+import { createCard, fetchBoards, fetchCards, fetchLists, moveCard as moveCardApi, updateCard } from '../api/client'
 import type { CreateCardInput, UpdateCardInput } from '../api/client'
 import type { BoardDto, CardDto, ListDto } from '../api/types'
 
@@ -22,42 +22,19 @@ function groupAndSortCards(lists: ListDto[], cards: CardDto[]): Map<string, Card
   return cardsByListId
 }
 
+function reindexPositions(cards: CardDto[]): CardDto[] {
+  return cards.map((card, index) => (card.position === index ? card : { ...card, position: index }))
+}
+
 export function useBoardData(): {
   state: BoardDataState
   addCard: (listId: string, input: CreateCardInput) => Promise<void>
   editCard: (cardId: string, input: UpdateCardInput) => Promise<void>
+  moveCardLocally: (cardId: string, targetListId: string, targetIndex: number) => void
+  persistCardPosition: (cardId: string, targetListId: string, targetIndex: number) => Promise<void>
 } {
   const [state, setState] = useState<BoardDataState>({ status: 'loading' })
-
-  async function addCard(listId: string, input: CreateCardInput) {
-    const created = await createCard(listId, input)
-    setState((prev) => {
-      if (prev.status !== 'ready') {
-        return prev
-      }
-      const cardsByListId = new Map(prev.cardsByListId)
-      cardsByListId.set(listId, [...(cardsByListId.get(listId) ?? []), created])
-      return { ...prev, cardsByListId }
-    })
-  }
-
-  async function editCard(cardId: string, input: UpdateCardInput) {
-    const updated = await updateCard(cardId, input)
-    setState((prev) => {
-      if (prev.status !== 'ready') {
-        return prev
-      }
-      const cardsByListId = new Map(prev.cardsByListId)
-      const listCards = cardsByListId.get(updated.listId)
-      if (listCards) {
-        cardsByListId.set(
-          updated.listId,
-          listCards.map((card) => (card.id === updated.id ? updated : card)),
-        )
-      }
-      return { ...prev, cardsByListId }
-    })
-  }
+  const [reloadToken, setReloadToken] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -94,7 +71,84 @@ export function useBoardData(): {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [reloadToken])
 
-  return { state, addCard, editCard }
+  async function addCard(listId: string, input: CreateCardInput) {
+    const created = await createCard(listId, input)
+    setState((prev) => {
+      if (prev.status !== 'ready') {
+        return prev
+      }
+      const cardsByListId = new Map(prev.cardsByListId)
+      cardsByListId.set(listId, [...(cardsByListId.get(listId) ?? []), created])
+      return { ...prev, cardsByListId }
+    })
+  }
+
+  async function editCard(cardId: string, input: UpdateCardInput) {
+    const updated = await updateCard(cardId, input)
+    setState((prev) => {
+      if (prev.status !== 'ready') {
+        return prev
+      }
+      const cardsByListId = new Map(prev.cardsByListId)
+      const listCards = cardsByListId.get(updated.listId)
+      if (listCards) {
+        cardsByListId.set(
+          updated.listId,
+          listCards.map((card) => (card.id === updated.id ? updated : card)),
+        )
+      }
+      return { ...prev, cardsByListId }
+    })
+  }
+
+  function moveCardLocally(cardId: string, targetListId: string, targetIndex: number) {
+    setState((prev) => {
+      if (prev.status !== 'ready') {
+        return prev
+      }
+
+      let sourceListId: string | null = null
+      let movingCard: CardDto | null = null
+      for (const [listId, cards] of prev.cardsByListId) {
+        const found = cards.find((card) => card.id === cardId)
+        if (found) {
+          sourceListId = listId
+          movingCard = found
+          break
+        }
+      }
+      if (!movingCard || sourceListId === null) {
+        return prev
+      }
+
+      const cardsByListId = new Map(prev.cardsByListId)
+      const withoutMoved = (cardsByListId.get(sourceListId) ?? []).filter((card) => card.id !== cardId)
+
+      if (sourceListId === targetListId) {
+        const insertAt = Math.max(0, Math.min(targetIndex, withoutMoved.length))
+        withoutMoved.splice(insertAt, 0, movingCard)
+        cardsByListId.set(sourceListId, reindexPositions(withoutMoved))
+      } else {
+        cardsByListId.set(sourceListId, reindexPositions(withoutMoved))
+        const targetCards = [...(cardsByListId.get(targetListId) ?? [])]
+        const insertAt = Math.max(0, Math.min(targetIndex, targetCards.length))
+        targetCards.splice(insertAt, 0, { ...movingCard, listId: targetListId })
+        cardsByListId.set(targetListId, reindexPositions(targetCards))
+      }
+
+      return { ...prev, cardsByListId }
+    })
+  }
+
+  async function persistCardPosition(cardId: string, targetListId: string, targetIndex: number) {
+    try {
+      await moveCardApi(cardId, targetListId, targetIndex)
+    } catch {
+      setReloadToken((token) => token + 1)
+    }
+  }
+
+  return { state, addCard, editCard, moveCardLocally, persistCardPosition }
 }

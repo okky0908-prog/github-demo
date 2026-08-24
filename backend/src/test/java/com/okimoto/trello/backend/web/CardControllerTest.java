@@ -22,7 +22,9 @@ import tools.jackson.databind.ObjectMapper;
 class CardControllerTest {
 
     private static final UUID SEED_LIST_ID = UUID.fromString("22222222-2222-2222-2222-222222222221");
+    private static final UUID SEED_LIST2_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final UUID SEED_CARD_ID = UUID.fromString("33333333-3333-3333-3333-333333333331");
+    private static final UUID SEED_CARD2_ID = UUID.fromString("33333333-3333-3333-3333-333333333332");
 
     @Autowired
     private MockMvc mockMvc;
@@ -98,6 +100,67 @@ class CardControllerTest {
         String requestBody = objectMapper.writeValueAsString(new CardCreateRequest("更新後タイトル", null, null, null));
 
         mockMvc.perform(MockMvcRequestBuilders.put("/api/cards/{cardId}", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    void moveCard_同一リスト内で並び替えできる() throws Exception {
+        String requestBody = objectMapper.writeValueAsString(new CardMoveRequest(SEED_LIST_ID, 0));
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/cards/{cardId}/position", SEED_CARD2_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.listId").value(SEED_LIST_ID.toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.position").value(0));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/lists/{listId}/cards", SEED_LIST_ID))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(SEED_CARD2_ID.toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].position").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").value(SEED_CARD_ID.toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].position").value(1));
+    }
+
+    @Test
+    void moveCard_別リストへ移動できる() throws Exception {
+        String requestBody = objectMapper.writeValueAsString(new CardMoveRequest(SEED_LIST2_ID, 0));
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/cards/{cardId}/position", SEED_CARD_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.listId").value(SEED_LIST2_ID.toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.position").value(0));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/lists/{listId}/cards", SEED_LIST2_ID))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(SEED_CARD_ID.toString()));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/lists/{listId}/cards", SEED_LIST_ID))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[?(@.id == '" + SEED_CARD_ID + "')]").doesNotExist())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(SEED_CARD2_ID.toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].position").value(0));
+    }
+
+    @Test
+    void moveCard_存在しないカードIDだと404() throws Exception {
+        String requestBody = objectMapper.writeValueAsString(new CardMoveRequest(SEED_LIST_ID, 0));
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/cards/{cardId}/position", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    void moveCard_移動先リストが存在しないと404() throws Exception {
+        String requestBody = objectMapper.writeValueAsString(new CardMoveRequest(UUID.randomUUID(), 0));
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/cards/{cardId}/position", SEED_CARD_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());

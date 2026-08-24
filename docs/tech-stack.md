@@ -12,7 +12,7 @@
 - Lint：oxlint（1.79.0）
 - 状態管理：React標準の useState / useContext 等で対応する（本アプリの規模では外部状態管理ライブラリは不要と判断）
 - サーバー通信：標準の fetch APIを直接利用する（本アプリの規模ではReact Query等のデータ取得ライブラリは不要と判断。バックエンドは後述のREST APIを利用する）
-- ドラッグ&ドロップ：dnd-kit（@dnd-kit/core）を採用予定（2026-08-22時点、ボード画面はREAD専用実装のため未導入。ドラッグ&ドロップ実装時に追加する）
+- ドラッグ&ドロップ：dnd-kit（@dnd-kit/core 6.3.1、@dnd-kit/sortable 10.0.0、@dnd-kit/utilities 3.2.2）を採用
   - 理由：旧来よく使われた react-beautiful-dnd はメンテナンス終了しているため非推奨。dnd-kitは軽量かつ活発にメンテナンスされており、最新のReactにも対応している
 - スタイリング：CSS Modules など、追加ライブラリに依存しないシンプルな手段を想定（詳細は設計フェーズで決定）
 - ※ Next.jsは今回は対象外（SSR/SSG等が不要な単一ページ構成のため、素のReact + Viteで十分と判断）
