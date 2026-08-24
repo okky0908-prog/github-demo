@@ -10,15 +10,26 @@ import {
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import { useBoardData } from '../hooks/useBoardData'
 import type { CardDto } from '../api/types'
+import type { SortMode } from '../lib/cardSort'
+import { sortCardsForDisplay } from '../lib/cardSort'
 import { Card } from './Card'
 import { CardEditModal } from './CardEditModal'
 import { ListColumn } from './ListColumn'
 import styles from './BoardView.module.css'
 
 export function BoardView() {
-  const { state, addCard, editCard, moveCardLocally, persistCardPosition, changeCardList } = useBoardData()
+  const {
+    state,
+    addCard,
+    editCard,
+    moveCardLocally,
+    persistCardPosition,
+    changeCardList,
+    commitSortedOrder,
+  } = useBoardData()
   const [editingCard, setEditingCard] = useState<CardDto | null>(null)
   const [activeCard, setActiveCard] = useState<CardDto | null>(null)
+  const [sortModes, setSortModes] = useState<Record<string, SortMode>>({})
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
   if (state.status === 'loading') {
@@ -30,6 +41,18 @@ export function BoardView() {
   }
 
   const board = state
+
+  function getSortMode(listId: string): SortMode {
+    return sortModes[listId] ?? 'manual'
+  }
+
+  function setSortMode(listId: string, mode: SortMode) {
+    setSortModes((prev) => ({ ...prev, [listId]: mode }))
+  }
+
+  function getDisplayedCards(listId: string): CardDto[] {
+    return sortCardsForDisplay(board.cardsByListId.get(listId) ?? [], getSortMode(listId))
+  }
 
   function findContainerId(id: string): string | undefined {
     if (board.lists.some((list) => list.id === id)) {
@@ -70,9 +93,9 @@ export function BoardView() {
       return
     }
 
-    const targetCards = board.cardsByListId.get(targetListId) ?? []
-    const overIndex = targetCards.findIndex((card) => card.id === overId)
-    moveCardLocally(activeId, targetListId, overIndex === -1 ? targetCards.length : overIndex)
+    const targetDisplayed = getDisplayedCards(targetListId)
+    const overIndex = targetDisplayed.findIndex((card) => card.id === overId)
+    moveCardLocally(activeId, targetListId, overIndex === -1 ? targetDisplayed.length : overIndex)
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -88,12 +111,27 @@ export function BoardView() {
       return
     }
 
-    const targetCards = board.cardsByListId.get(targetListId) ?? []
-    const overIndex = targetCards.findIndex((card) => card.id === overId)
-    const finalIndex = overIndex === -1 ? targetCards.length : overIndex
+    const targetDisplayed = getDisplayedCards(targetListId)
+    const overIndex = targetDisplayed.findIndex((card) => card.id === overId)
+    const finalIndex = overIndex === -1 ? targetDisplayed.length : overIndex
 
-    moveCardLocally(activeId, targetListId, finalIndex)
-    persistCardPosition(activeId, targetListId, finalIndex)
+    if (getSortMode(targetListId) === 'manual') {
+      moveCardLocally(activeId, targetListId, finalIndex)
+      persistCardPosition(activeId, targetListId, finalIndex)
+      return
+    }
+
+    const movingCard = findCardById(activeId)
+    if (!movingCard) {
+      return
+    }
+    const withoutMoved = targetDisplayed.filter((card) => card.id !== activeId)
+    const insertAt = Math.max(0, Math.min(finalIndex, withoutMoved.length))
+    withoutMoved.splice(insertAt, 0, movingCard)
+    commitSortedOrder(
+      targetListId,
+      withoutMoved.map((card) => card.id),
+    )
   }
 
   return (
@@ -110,7 +148,9 @@ export function BoardView() {
             key={list.id}
             list={list}
             lists={board.lists}
-            cards={board.cardsByListId.get(list.id) ?? []}
+            cards={getDisplayedCards(list.id)}
+            sortMode={getSortMode(list.id)}
+            onSortModeChange={(mode) => setSortMode(list.id, mode)}
             onAddCard={addCard}
             onCardClick={setEditingCard}
           />

@@ -33,6 +33,7 @@ export function useBoardData(): {
   moveCardLocally: (cardId: string, targetListId: string, targetIndex: number) => void
   persistCardPosition: (cardId: string, targetListId: string, targetIndex: number) => Promise<void>
   changeCardList: (cardId: string, targetListId: string) => Promise<void>
+  commitSortedOrder: (targetListId: string, orderedCardIds: string[]) => Promise<void>
 } {
   const [state, setState] = useState<BoardDataState>({ status: 'loading' })
   const [reloadToken, setReloadToken] = useState(0)
@@ -157,5 +158,68 @@ export function useBoardData(): {
     await persistCardPosition(cardId, targetListId, targetIndex)
   }
 
-  return { state, addCard, editCard, moveCardLocally, persistCardPosition, changeCardList }
+  async function commitSortedOrder(targetListId: string, orderedCardIds: string[]) {
+    setState((prev) => {
+      if (prev.status !== 'ready') {
+        return prev
+      }
+
+      let sourceListId: string | null = null
+      let movingCard: CardDto | null = null
+      for (const [listId, cards] of prev.cardsByListId) {
+        if (listId === targetListId) {
+          continue
+        }
+        const found = cards.find((card) => orderedCardIds.includes(card.id))
+        if (found) {
+          sourceListId = listId
+          movingCard = found
+          break
+        }
+      }
+
+      const cardsByListId = new Map(prev.cardsByListId)
+
+      if (movingCard && sourceListId) {
+        const movedCardId = movingCard.id
+        const remainingSource = (cardsByListId.get(sourceListId) ?? []).filter((card) => card.id !== movedCardId)
+        cardsByListId.set(sourceListId, reindexPositions(remainingSource))
+      }
+
+      const cardById = new Map<string, CardDto>()
+      for (const cards of cardsByListId.values()) {
+        for (const card of cards) {
+          cardById.set(card.id, card)
+        }
+      }
+      if (movingCard) {
+        cardById.set(movingCard.id, { ...movingCard, listId: targetListId })
+      }
+
+      const newTargetOrder = orderedCardIds
+        .map((id) => cardById.get(id))
+        .filter((card): card is CardDto => card !== undefined)
+      cardsByListId.set(targetListId, reindexPositions(newTargetOrder))
+
+      return { ...prev, cardsByListId }
+    })
+
+    try {
+      for (let index = 0; index < orderedCardIds.length; index++) {
+        await moveCardApi(orderedCardIds[index], targetListId, index)
+      }
+    } catch {
+      setReloadToken((token) => token + 1)
+    }
+  }
+
+  return {
+    state,
+    addCard,
+    editCard,
+    moveCardLocally,
+    persistCardPosition,
+    changeCardList,
+    commitSortedOrder,
+  }
 }
