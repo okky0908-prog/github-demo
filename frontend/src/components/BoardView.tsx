@@ -16,7 +16,7 @@ import { ListColumn } from './ListColumn'
 import styles from './BoardView.module.css'
 
 export function BoardView() {
-  const { state, addCard, editCard, moveCardLocally, persistCardPosition } = useBoardData()
+  const { state, addCard, editCard, moveCardLocally, persistCardPosition, changeCardList } = useBoardData()
   const [editingCard, setEditingCard] = useState<CardDto | null>(null)
   const [activeCard, setActiveCard] = useState<CardDto | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
@@ -109,6 +109,7 @@ export function BoardView() {
           <ListColumn
             key={list.id}
             list={list}
+            lists={board.lists}
             cards={board.cardsByListId.get(list.id) ?? []}
             onAddCard={addCard}
             onCardClick={setEditingCard}
@@ -117,7 +118,13 @@ export function BoardView() {
       </div>
       <DragOverlay>{activeCard && <Card card={activeCard} onClick={() => {}} />}</DragOverlay>
       {editingCard && (
-        <CardEditModal card={editingCard} onSave={editCard} onClose={() => setEditingCard(null)} />
+        <CardEditModal
+          card={editingCard}
+          lists={board.lists}
+          onSave={editCard}
+          onChangeList={changeCardList}
+          onClose={() => setEditingCard(null)}
+        />
       )}
     </DndContext>
   )

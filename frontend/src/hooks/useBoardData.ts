@@ -32,6 +32,7 @@ export function useBoardData(): {
   editCard: (cardId: string, input: UpdateCardInput) => Promise<void>
   moveCardLocally: (cardId: string, targetListId: string, targetIndex: number) => void
   persistCardPosition: (cardId: string, targetListId: string, targetIndex: number) => Promise<void>
+  changeCardList: (cardId: string, targetListId: string) => Promise<void>
 } {
   const [state, setState] = useState<BoardDataState>({ status: 'loading' })
   const [reloadToken, setReloadToken] = useState(0)
@@ -150,5 +151,11 @@ export function useBoardData(): {
     }
   }
 
-  return { state, addCard, editCard, moveCardLocally, persistCardPosition }
+  async function changeCardList(cardId: string, targetListId: string) {
+    const targetIndex = state.status === 'ready' ? (state.cardsByListId.get(targetListId)?.length ?? 0) : 0
+    moveCardLocally(cardId, targetListId, targetIndex)
+    await persistCardPosition(cardId, targetListId, targetIndex)
+  }
+
+  return { state, addCard, editCard, moveCardLocally, persistCardPosition, changeCardList }
 }

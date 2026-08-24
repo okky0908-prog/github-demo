@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import type { UpdateCardInput } from '../api/client'
-import type { CardDto, Priority } from '../api/types'
+import type { CardDto, ListDto, Priority } from '../api/types'
 import styles from './CardEditModal.module.css'
 
 const PRIORITY_OPTIONS: { value: Priority | ''; label: string }[] = [
@@ -13,17 +13,22 @@ const PRIORITY_OPTIONS: { value: Priority | ''; label: string }[] = [
 
 export function CardEditModal({
   card,
+  lists,
   onSave,
+  onChangeList,
   onClose,
 }: {
   card: CardDto
+  lists: ListDto[]
   onSave: (cardId: string, input: UpdateCardInput) => Promise<void>
+  onChangeList: (cardId: string, targetListId: string) => Promise<void>
   onClose: () => void
 }) {
   const [title, setTitle] = useState(card.title)
   const [description, setDescription] = useState(card.description ?? '')
   const [priority, setPriority] = useState<Priority | ''>(card.priority ?? '')
   const [dueDate, setDueDate] = useState(card.dueDate ?? '')
+  const [listId, setListId] = useState(card.listId)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,6 +48,9 @@ export function CardEditModal({
         priority: priority || null,
         dueDate: dueDate || null,
       })
+      if (listId !== card.listId) {
+        await onChangeList(card.id, listId)
+      }
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -80,6 +88,22 @@ export function CardEditModal({
             onChange={(event) => setDescription(event.target.value)}
             disabled={isSubmitting}
           />
+        </label>
+
+        <label className={styles.label}>
+          ステータス
+          <select
+            className={styles.select}
+            value={listId}
+            onChange={(event) => setListId(event.target.value)}
+            disabled={isSubmitting}
+          >
+            {lists.map((list) => (
+              <option key={list.id} value={list.id}>
+                {list.title}
+              </option>
+            ))}
+          </select>
         </label>
 
         <div className={styles.row}>
