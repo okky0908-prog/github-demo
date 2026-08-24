@@ -4,5 +4,4 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.util.UUID;
 
-public record CardMoveRequest(@NotNull UUID listId, @PositiveOrZero int position) {
-}
+public record CardMoveRequest(@NotNull UUID listId, @PositiveOrZero int position) {}

@@ -14,45 +14,42 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(name = "board")
 public class Board {
 
-    @Id
-    @UuidGenerator
-    private UUID id;
+  @Id @UuidGenerator private UUID id;
 
-    @Column(nullable = false)
-    private String name;
+  @Column(nullable = false)
+  private String name;
 
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(nullable = false)
+  private Instant updatedAt;
 
-    protected Board() {
-    }
+  protected Board() {}
 
-    public Board(String name) {
-        this.name = name;
-    }
+  public Board(String name) {
+    this.name = name;
+  }
 
-    public UUID getId() {
-        return id;
-    }
+  public UUID getId() {
+    return id;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
 }

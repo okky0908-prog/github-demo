@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/boards")
 public class BoardController {
 
-    private final BoardRepository boardRepository;
+  private final BoardRepository boardRepository;
 
-    public BoardController(BoardRepository boardRepository) {
-        this.boardRepository = boardRepository;
-    }
+  public BoardController(BoardRepository boardRepository) {
+    this.boardRepository = boardRepository;
+  }
 
-    @GetMapping
-    public List<BoardResponse> listBoards() {
-        return boardRepository.findAll().stream().map(BoardResponse::from).toList();
-    }
+  @GetMapping
+  public List<BoardResponse> listBoards() {
+    return boardRepository.findAll().stream().map(BoardResponse::from).toList();
+  }
 }

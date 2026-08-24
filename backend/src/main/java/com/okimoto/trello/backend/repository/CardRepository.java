@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CardRepository extends JpaRepository<Card, UUID> {
 
-    List<Card> findByListIdOrderByPosition(UUID listId);
+  List<Card> findByListIdOrderByPosition(UUID listId);
 }

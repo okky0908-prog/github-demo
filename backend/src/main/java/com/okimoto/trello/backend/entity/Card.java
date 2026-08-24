@@ -20,103 +20,100 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(name = "card")
 public class Card {
 
-    @Id
-    @UuidGenerator
-    private UUID id;
+  @Id @UuidGenerator private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "list_id", nullable = false)
-    private TaskList list;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "list_id", nullable = false)
+  private TaskList list;
 
-    @Column(nullable = false)
-    private String title;
+  @Column(nullable = false)
+  private String title;
 
-    @Column(columnDefinition = "text")
-    private String description;
+  @Column(columnDefinition = "text")
+  private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 10)
-    private Priority priority;
+  @Enumerated(EnumType.STRING)
+  @Column(length = 10)
+  private Priority priority;
 
-    private LocalDate dueDate;
+  private LocalDate dueDate;
 
-    @Column(nullable = false)
-    private int position;
+  @Column(nullable = false)
+  private int position;
 
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(nullable = false)
+  private Instant updatedAt;
 
-    protected Card() {
-    }
+  protected Card() {}
 
-    public Card(TaskList list, String title, int position) {
-        this.list = list;
-        this.title = title;
-        this.position = position;
-    }
+  public Card(TaskList list, String title, int position) {
+    this.list = list;
+    this.title = title;
+    this.position = position;
+  }
 
-    public UUID getId() {
-        return id;
-    }
+  public UUID getId() {
+    return id;
+  }
 
-    public TaskList getList() {
-        return list;
-    }
+  public TaskList getList() {
+    return list;
+  }
 
-    public void setList(TaskList list) {
-        this.list = list;
-    }
+  public void setList(TaskList list) {
+    this.list = list;
+  }
 
-    public String getTitle() {
-        return title;
-    }
+  public String getTitle() {
+    return title;
+  }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+  public void setTitle(String title) {
+    this.title = title;
+  }
 
-    public String getDescription() {
-        return description;
-    }
+  public String getDescription() {
+    return description;
+  }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
-    public Priority getPriority() {
-        return priority;
-    }
+  public Priority getPriority() {
+    return priority;
+  }
 
-    public void setPriority(Priority priority) {
-        this.priority = priority;
-    }
+  public void setPriority(Priority priority) {
+    this.priority = priority;
+  }
 
-    public LocalDate getDueDate() {
-        return dueDate;
-    }
+  public LocalDate getDueDate() {
+    return dueDate;
+  }
 
-    public void setDueDate(LocalDate dueDate) {
-        this.dueDate = dueDate;
-    }
+  public void setDueDate(LocalDate dueDate) {
+    this.dueDate = dueDate;
+  }
 
-    public int getPosition() {
-        return position;
-    }
+  public int getPosition() {
+    return position;
+  }
 
-    public void setPosition(int position) {
-        this.position = position;
-    }
+  public void setPosition(int position) {
+    this.position = position;
+  }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
 }
