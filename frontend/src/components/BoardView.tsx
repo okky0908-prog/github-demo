@@ -26,6 +26,7 @@ export function BoardView() {
     persistCardPosition,
     changeCardList,
     commitSortedOrder,
+    removeCard,
   } = useBoardData()
   const [editingCard, setEditingCard] = useState<CardDto | null>(null)
   const [activeCard, setActiveCard] = useState<CardDto | null>(null)
@@ -153,10 +154,13 @@ export function BoardView() {
             onSortModeChange={(mode) => setSortMode(list.id, mode)}
             onAddCard={addCard}
             onCardClick={setEditingCard}
+            onCardDelete={removeCard}
           />
         ))}
       </div>
-      <DragOverlay>{activeCard && <Card card={activeCard} onClick={() => {}} />}</DragOverlay>
+      <DragOverlay>
+        {activeCard && <Card card={activeCard} onClick={() => {}} onDelete={() => {}} />}
+      </DragOverlay>
       {editingCard && (
         <CardEditModal
           card={editingCard}
