@@ -1,32 +1,56 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import type { CreateCardInput } from '../api/client'
+import type { Priority } from '../api/types'
 import styles from './BoardView.module.css'
 
-export function AddCardForm({ onAdd }: { onAdd: (title: string) => Promise<void> }) {
+const PRIORITY_OPTIONS: { value: Priority | ''; label: string }[] = [
+  { value: '', label: '優先度：未設定' },
+  { value: 'HIGH', label: '優先度：高' },
+  { value: 'MID', label: '優先度：中' },
+  { value: 'LOW', label: '優先度：低' },
+]
+
+export function AddCardForm({ onAdd }: { onAdd: (input: CreateCardInput) => Promise<void> }) {
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState<Priority | ''>('')
+  const [dueDate, setDueDate] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  function resetFields() {
+    setTitle('')
+    setDescription('')
+    setPriority('')
+    setDueDate('')
+    setError(null)
+  }
+
   function cancel() {
     setIsEditing(false)
-    setTitle('')
-    setError(null)
+    resetFields()
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    const trimmed = title.trim()
-    if (!trimmed) {
+    const trimmedTitle = title.trim()
+    if (!trimmedTitle) {
       return
     }
 
     setIsSubmitting(true)
     setError(null)
     try {
-      await onAdd(trimmed)
-      setTitle('')
+      await onAdd({
+        title: trimmedTitle,
+        description: description.trim() || null,
+        priority: priority || null,
+        dueDate: dueDate || null,
+      })
       setIsEditing(false)
+      resetFields()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -53,6 +77,35 @@ export function AddCardForm({ onAdd }: { onAdd: (title: string) => Promise<void>
         disabled={isSubmitting}
         autoFocus
       />
+      <textarea
+        className={styles.addCardTextarea}
+        placeholder="説明（任意）"
+        rows={2}
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+        disabled={isSubmitting}
+      />
+      <div className={styles.addCardRow}>
+        <select
+          className={styles.addCardSelect}
+          value={priority}
+          onChange={(event) => setPriority(event.target.value as Priority | '')}
+          disabled={isSubmitting}
+        >
+          {PRIORITY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <input
+          type="date"
+          className={styles.addCardDate}
+          value={dueDate}
+          onChange={(event) => setDueDate(event.target.value)}
+          disabled={isSubmitting}
+        />
+      </div>
       {error && <div className={styles.addCardError}>{error}</div>}
       <div className={styles.addCardActions}>
         <button type="submit" disabled={isSubmitting || !title.trim()}>
