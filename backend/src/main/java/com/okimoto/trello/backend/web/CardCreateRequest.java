@@ -6,8 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 public record CardCreateRequest(
-        @NotBlank @Size(max = 255) String title,
-        String description,
-        Priority priority,
-        LocalDate dueDate) {
-}
+    @NotBlank @Size(max = 255) String title,
+    String description,
+    Priority priority,
+    LocalDate dueDate) {}

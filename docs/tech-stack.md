@@ -26,6 +26,7 @@
 - Web／API：Spring Web（spring-boot-starter-webmvc、組み込みTomcat 11.0.22）でRESTful API（JSON）を提供する
 - バリデーション：Spring Validation（Bean Validation／Hibernate Validator）でリクエストの入力検証を行う
 - テスト：JUnit 5 + Spring Boot Test（MockMvcによるAPIレベルのテスト）
+- コード整形／静的チェック：Spotless（`com.diffplug.spotless` 8.10.0、Google Java Format + removeUnusedImports）を導入し、`./gradlew check`実行時に自動でフォーマット崩れ・未使用importを検出する
 
 ## データベース・永続化
 

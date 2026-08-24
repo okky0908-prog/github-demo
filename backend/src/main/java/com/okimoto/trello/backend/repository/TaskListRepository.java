@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TaskListRepository extends JpaRepository<TaskList, UUID> {
 
-    List<TaskList> findByBoardIdOrderByPosition(UUID boardId);
+  List<TaskList> findByBoardIdOrderByPosition(UUID boardId);
 }

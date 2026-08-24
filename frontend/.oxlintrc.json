@@ -1,8 +1,21 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
+  "plugins": ["react", "typescript", "oxc", "jsx-a11y"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+    "react/exhaustive-deps": "warn",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    // Viteの自動JSXランタイムを使用しているためReactのスコープ内インポートは不要
+    "react/react-in-jsx-scope": "off",
+    // フォーム/モーダルを開いた際に最初の入力欄へ意図的にフォーカスしている
+    "jsx-a11y/no-autofocus": "off",
+    // Card.tsx / CardEditModal.tsxのクリック可能なdivが未対応（既知の指摘事項、別途対応予定）
+    "jsx-a11y/click-events-have-key-events": "warn",
+    "jsx-a11y/no-static-element-interactions": "warn",
+    "jsx-a11y/no-noninteractive-element-interactions": "warn"
   }
 }

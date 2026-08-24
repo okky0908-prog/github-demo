@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/boards/{boardId}/lists")
 public class TaskListController {
 
-    private final TaskListRepository taskListRepository;
+  private final TaskListRepository taskListRepository;
 
-    public TaskListController(TaskListRepository taskListRepository) {
-        this.taskListRepository = taskListRepository;
-    }
+  public TaskListController(TaskListRepository taskListRepository) {
+    this.taskListRepository = taskListRepository;
+  }
 
-    @GetMapping
-    public List<ListResponse> listLists(@PathVariable UUID boardId) {
-        return taskListRepository.findByBoardIdOrderByPosition(boardId).stream()
-                .map(ListResponse::from)
-                .toList();
-    }
+  @GetMapping
+  public List<ListResponse> listLists(@PathVariable UUID boardId) {
+    return taskListRepository.findByBoardIdOrderByPosition(boardId).stream()
+        .map(ListResponse::from)
+        .toList();
+  }
 }
