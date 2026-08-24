@@ -8,11 +8,13 @@ import styles from './BoardView.module.css'
 
 export function ListColumn({
   list,
+  lists,
   cards,
   onAddCard,
   onCardClick,
 }: {
   list: ListDto
+  lists: ListDto[]
   cards: CardDto[]
   onAddCard: (listId: string, input: CreateCardInput) => Promise<void>
   onCardClick: (card: CardDto) => void
@@ -29,7 +31,7 @@ export function ListColumn({
           ))}
         </div>
       </SortableContext>
-      <AddCardForm onAdd={(input) => onAddCard(list.id, input)} />
+      <AddCardForm lists={lists} defaultListId={list.id} onAdd={onAddCard} />
     </div>
   )
 }

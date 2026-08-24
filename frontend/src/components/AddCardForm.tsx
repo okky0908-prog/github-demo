@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import type { CreateCardInput } from '../api/client'
-import type { Priority } from '../api/types'
+import type { ListDto, Priority } from '../api/types'
 import styles from './BoardView.module.css'
 
 const PRIORITY_OPTIONS: { value: Priority | ''; label: string }[] = [
@@ -11,12 +11,21 @@ const PRIORITY_OPTIONS: { value: Priority | ''; label: string }[] = [
   { value: 'LOW', label: '優先度：低' },
 ]
 
-export function AddCardForm({ onAdd }: { onAdd: (input: CreateCardInput) => Promise<void> }) {
+export function AddCardForm({
+  lists,
+  defaultListId,
+  onAdd,
+}: {
+  lists: ListDto[]
+  defaultListId: string
+  onAdd: (listId: string, input: CreateCardInput) => Promise<void>
+}) {
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<Priority | ''>('')
   const [dueDate, setDueDate] = useState('')
+  const [listId, setListId] = useState(defaultListId)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,6 +34,7 @@ export function AddCardForm({ onAdd }: { onAdd: (input: CreateCardInput) => Prom
     setDescription('')
     setPriority('')
     setDueDate('')
+    setListId(defaultListId)
     setError(null)
   }
 
@@ -43,7 +53,7 @@ export function AddCardForm({ onAdd }: { onAdd: (input: CreateCardInput) => Prom
     setIsSubmitting(true)
     setError(null)
     try {
-      await onAdd({
+      await onAdd(listId, {
         title: trimmedTitle,
         description: description.trim() || null,
         priority: priority || null,
@@ -85,6 +95,18 @@ export function AddCardForm({ onAdd }: { onAdd: (input: CreateCardInput) => Prom
         onChange={(event) => setDescription(event.target.value)}
         disabled={isSubmitting}
       />
+      <select
+        className={styles.addCardSelect}
+        value={listId}
+        onChange={(event) => setListId(event.target.value)}
+        disabled={isSubmitting}
+      >
+        {lists.map((list) => (
+          <option key={list.id} value={list.id}>
+            ステータス：{list.title}
+          </option>
+        ))}
+      </select>
       <div className={styles.addCardRow}>
         <select
           className={styles.addCardSelect}
