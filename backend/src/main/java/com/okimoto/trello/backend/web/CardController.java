@@ -8,7 +8,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -66,5 +68,49 @@ public class CardController {
         card.setDueDate(request.dueDate());
 
         return CardResponse.from(cardRepository.save(card));
+    }
+
+    @PatchMapping("/api/cards/{cardId}/position")
+    @Transactional
+    public CardResponse moveCard(@PathVariable UUID cardId, @Valid @RequestBody CardMoveRequest request) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "card not found: " + cardId));
+        TaskList targetList = taskListRepository.findById(request.listId())
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "list not found: " + request.listId()));
+
+        UUID sourceListId = card.getList().getId();
+
+        if (sourceListId.equals(request.listId())) {
+            List<Card> siblings = cardRepository.findByListIdOrderByPosition(sourceListId);
+            siblings.removeIf(c -> c.getId().equals(cardId));
+            siblings.add(clamp(request.position(), siblings.size()), card);
+            renumber(siblings);
+            cardRepository.saveAll(siblings);
+        } else {
+            List<Card> sourceSiblings = cardRepository.findByListIdOrderByPosition(sourceListId);
+            sourceSiblings.removeIf(c -> c.getId().equals(cardId));
+            renumber(sourceSiblings);
+
+            List<Card> targetSiblings = cardRepository.findByListIdOrderByPosition(request.listId());
+            card.setList(targetList);
+            targetSiblings.add(clamp(request.position(), targetSiblings.size()), card);
+            renumber(targetSiblings);
+
+            cardRepository.saveAll(sourceSiblings);
+            cardRepository.saveAll(targetSiblings);
+        }
+
+        return CardResponse.from(card);
+    }
+
+    private static int clamp(int value, int maxExclusiveBound) {
+        return Math.max(0, Math.min(value, maxExclusiveBound));
+    }
+
+    private static void renumber(List<Card> cards) {
+        for (int i = 0; i < cards.size(); i++) {
+            cards.get(i).setPosition(i);
+        }
     }
 }
