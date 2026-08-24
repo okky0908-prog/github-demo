@@ -62,6 +62,35 @@
   border-radius: 4px;
 }
 
+.addCardTextarea {
+  padding: 6px 8px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.addCardRow {
+  display: flex;
+  gap: 6px;
+}
+
+.addCardSelect {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 13px;
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+}
+
+.addCardDate {
+  padding: 6px 4px;
+  font-size: 13px;
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+}
+
 .addCardError {
   font-size: 12px;
   color: #e53935;

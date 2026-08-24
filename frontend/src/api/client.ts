@@ -1,4 +1,4 @@
-import type { BoardDto, CardDto, ListDto } from './types'
+import type { BoardDto, CardDto, ListDto, Priority } from './types'
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path)
@@ -22,6 +22,9 @@ export function fetchCards(): Promise<CardDto[]> {
 
 export interface CreateCardInput {
   title: string
+  description?: string | null
+  priority?: Priority | null
+  dueDate?: string | null
 }
 
 export async function createCard(listId: string, input: CreateCardInput): Promise<CardDto> {

@@ -1,3 +1,4 @@
+import type { CreateCardInput } from '../api/client'
 import type { CardDto, ListDto } from '../api/types'
 import { AddCardForm } from './AddCardForm'
 import { Card } from './Card'
@@ -10,7 +11,7 @@ export function ListColumn({
 }: {
   list: ListDto
   cards: CardDto[]
-  onAddCard: (listId: string, title: string) => Promise<void>
+  onAddCard: (listId: string, input: CreateCardInput) => Promise<void>
 }) {
   return (
     <div className={styles.list}>
@@ -20,7 +21,7 @@ export function ListColumn({
           <Card key={card.id} card={card} />
         ))}
       </div>
-      <AddCardForm onAdd={(title) => onAddCard(list.id, title)} />
+      <AddCardForm onAdd={(input) => onAddCard(list.id, input)} />
     </div>
   )
 }
