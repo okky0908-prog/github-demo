@@ -88,7 +88,9 @@ HashiCorp社製のIaCツール。AWS専用のCloudFormationという選択肢も
 brew install awscli
 aws --version
 
-brew install terraform
+# Terraformはhomebrew-coreから提供されていないため、HashiCorp公式tapを使う
+brew tap hashicorp/tap
+brew install hashicorp/tap/terraform
 terraform -version
 ```
 
