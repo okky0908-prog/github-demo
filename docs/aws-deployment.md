@@ -11,6 +11,7 @@
 - AWSマネジメントコンソールの手動操作ではなく、AWS CLI・Terraformを用いたコマンドラインベースで構築する
 - 構成は**最小コスト構成**（EC2インスタンス1台上でDocker Composeによりフロントエンド・バックエンド・PostgreSQLをまとめて動かす）を採用する。ECS Fargate + RDS + ALB等の本格構成は今回は対象外とする
 - AWSアカウントは既存のものを利用する（ルートユーザーでログイン可能な状態）
+- **コストを最優先事項とし、可能な限りAWS無料利用枠（Free Tier）の範囲内に収める**（詳細は「0-1. 無料利用枠を最優先とするコスト方針」を参照）
 
 ## 0. 前提知識
 
@@ -31,6 +32,28 @@ HashiCorp社製のIaCツール。AWS専用のCloudFormationという選択肢も
 | `terraform plan` | 適用した場合の変更内容のシミュレーション（実際には何も変更しない） |
 | `terraform apply` | 実際にAWS上にリソースを作成・変更する |
 | `terraform destroy` | 作成したリソースを削除する（コスト管理上重要） |
+
+### 0-1. 無料利用枠を最優先とするコスト方針
+
+コストを最優先事項とし、原則としてAWS無料利用枠（Free Tier）の範囲内でのみリソースを構築する。
+
+**注意：無料利用枠はアカウントの状態によって内容が異なる**
+
+- **12ヶ月無料利用枠**：アカウント作成から12ヶ月間、EC2・EBS等の主要サービスに一定量の無料枠が付与される（例：`t2.micro`/`t3.micro`を月750時間まで無料）。**12ヶ月を過ぎると対象外**になる
+- **常時無料（Always Free）**：アカウントの年数に関わらず常に無料の枠（例：データ転送量の一部）
+- 2025年7月以降に新規作成されたアカウントは、上記とは異なるクレジット付与型の無料プランが適用される場合がある
+
+**着手前に必ず確認すること**：AWSマネジメントコンソールの「請求とコスト管理」→「Free Tier（無料利用枠）」ページで、自分のアカウントがどの無料枠の対象で、いつまで有効かを確認する。この確認だけはコンソールでの一度きりの操作を推奨する（CLIでの確認方法は`aws configure`完了後にあらためて案内する）。
+
+**無料利用枠に収めるための具体的なルール**（第3章のアーキテクチャに反映済み）：
+
+- EC2インスタンスは`t2.micro`または`t3.micro`を1台のみ稼働させる。同時に複数台（テスト用等）を並行稼働させない（無料枠の750時間/月はアカウント内の対象インスタンス合計に対して適用されるため）
+- EBSボリュームは無料枠の上限（30GB）内に収まるサイズ（デフォルトの8GB程度）で作成する
+- Elastic IP（固定IP）は無料枠の対象外リスクがあるため、**今回は作成しない**。稼働中のインスタンスに自動付与されるパブリックIPを使う（インスタンス再起動でIPが変わる点は許容する）
+- データ転送量（アウト）は個人利用の範囲であれば無料枠（月100GB）に収まる想定
+- RDS・NAT Gateway・ALB・ECS Fargate等、無料枠が薄い/存在しないサービスは使用しない（現行のEC2 1台構成を維持する理由の一つでもある）
+- AWS Budgetsの予算アラートは、通常の月額予算アラートに加えて**低い閾値（例：$1）のアラートも設定**し、無料枠を超えた課金が発生した際に早期に気づけるようにする
+- 検証・学習で一時的にリソースを作った場合は、使い終わったら都度`terraform destroy`で削除し、無料枠の消費・想定外の課金を防ぐ
 
 ## 1. AWS認証設定
 
@@ -57,7 +80,7 @@ HashiCorp社製のIaCツール。AWS専用のCloudFormationという選択肢も
    # Default output format: json
    ```
 
-4. **（推奨）予算アラートの設定**。Billing → Budgetsで月額予算超過時のメール通知を設定し、意図しない課金を防ぐ
+4. **（推奨）予算アラートの設定**。Billing → Budgetsで月額予算超過時のメール通知を設定し、意図しない課金を防ぐ。無料利用枠を最優先とする方針（0-1章参照）に合わせ、低めの閾値（例：$1）でのアラートも設定しておく
 
 ## 2. 必要ツールのインストール（Mac / Homebrew）
 
@@ -65,7 +88,9 @@ HashiCorp社製のIaCツール。AWS専用のCloudFormationという選択肢も
 brew install awscli
 aws --version
 
-brew install terraform
+# Terraformはhomebrew-coreから提供されていないため、HashiCorp公式tapを使う
+brew tap hashicorp/tap
+brew install hashicorp/tap/terraform
 terraform -version
 ```
 
@@ -78,17 +103,18 @@ terraform -version
                                  └─ postgres コンテナ（5432番はコンテナ内のみ、外部非公開）
 ```
 
-- **インスタンスタイプ**：`t3.micro`または`t4g.micro`（無料利用枠対象になり得るが、アカウントの無料枠状況は個別に要確認）
+- **インスタンスタイプ**：`t2.micro`または`t3.micro`（12ヶ月無料利用枠の対象。アカウントの無料枠有効期限は0-1章の手順で個別に要確認）。`t4g.micro`はArm系で無料枠対象外のため今回は選ばない
 - **セキュリティグループ**：インバウンドは`80`（HTTP）と`22`（SSH、可能なら送信元IPを絞る）のみ許可。DBのポートは一切外部公開しない
+- **Elastic IPは作成しない**（0-1章参照）。パブリックIPは自動割り当てのものを使う
 - 本構成を実装する際は、[非機能要件](./non-functional-requirements.md)・[技術スタック](./tech-stack.md)の「ローカル環境限定・外部非公開」の記述もあわせて更新する
 
 ### Terraformで作成するリソース（想定）
 
-- `aws_instance`（EC2本体）
+- `aws_instance`（EC2本体、`t2.micro`/`t3.micro`、パブリックIP自動割り当て）
 - `aws_security_group`（ファイアウォール）
 - `aws_key_pair`（SSH鍵）
-- `aws_eip`（固定IP、任意）
 - 必要に応じて`aws_vpc`関連（デフォルトVPCの流用も可）
+- ※Elastic IP（`aws_eip`）は無料枠を最優先する方針のため作成しない
 
 ## 4. Terraformコードの構成（想定）
 
@@ -106,16 +132,18 @@ infra/
 
 ## 5. 実装時の作業の流れ
 
-1. Terraform用IAMユーザーの作成・`aws configure`（作業者自身の環境で実施）
-2. [CLAUDE.md](../CLAUDE.md)の運用ルールに従い、Issue作成 → `feat/xx-aws-terraform-deploy`等のブランチ作成
-3. `infra/`配下にTerraformコードを作成
-4. `terraform init` → `terraform plan`（差分確認） → `terraform apply`
-5. 発行されたIPアドレスへのアクセスで動作確認
-6. 問題なければPR作成 → マージ
-7. 不要時は`terraform destroy`でリソースを削除し、課金停止を確認する
+1. AWSマネジメントコンソールの「Free Tier」ページで無料利用枠の対象・有効期限を確認する（0-1章）
+2. Terraform用IAMユーザーの作成・`aws configure`（作業者自身の環境で実施）
+3. [CLAUDE.md](../CLAUDE.md)の運用ルールに従い、Issue作成 → `feat/xx-aws-terraform-deploy`等のブランチ作成
+4. `infra/`配下にTerraformコードを作成
+5. `terraform init` → `terraform plan`（差分確認、無料枠に収まる内容か再確認） → `terraform apply`
+6. 発行されたIPアドレスへのアクセスで動作確認
+7. 問題なければPR作成 → マージ
+8. 不要時は`terraform destroy`でリソースを削除し、課金停止を確認する
 
 ## 未決定事項
 
 - Terraform用IAMユーザーの権限方針（絞った権限 or `AdministratorAccess`）
 - AWS公開に伴う[非機能要件](./non-functional-requirements.md)・[技術スタック](./tech-stack.md)の更新タイミング（デプロイ実装と同時に行うか、別途行うか）
 - Terraform stateのリモートバックエンド（S3）への移行要否
+- 実際のアカウントの無料利用枠有効期限（着手時にコンソールで確認する）
