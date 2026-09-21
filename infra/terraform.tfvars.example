@@ -3,3 +3,4 @@
 
 ssh_public_key = "ssh-ed25519 AAAA... (自分の公開鍵の中身。例: cat ~/.ssh/github-demo-aws-ec2.pub)"
 my_ip_cidr     = "203.0.113.1/32" # 自分のグローバルIP/32（SSH・HTTP共通。例: curl -s https://checkip.amazonaws.com で確認）
+db_password    = "change-me-to-a-random-password" # RDSの管理者パスワード（8文字以上）

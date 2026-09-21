@@ -25,3 +25,27 @@ variable "my_ip_cidr" {
   description = "自分のPCからのアクセスのみを許可する送信元IP（SSH:22番・HTTP:80番の両方に適用。例: 自分のグローバルIP/32）"
   type        = string
 }
+
+variable "rds_instance_class" {
+  description = "RDSインスタンスクラス（無料利用枠対象: db.t2.micro / db.t3.micro、シングルAZ）"
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "db_name" {
+  description = "RDSに作成するデータベース名"
+  type        = string
+  default     = "trello"
+}
+
+variable "db_username" {
+  description = "RDSの管理者ユーザー名"
+  type        = string
+  default     = "trello"
+}
+
+variable "db_password" {
+  description = "RDSの管理者パスワード（terraform.tfvarsで設定する。8文字以上）"
+  type        = string
+  sensitive   = true
+}

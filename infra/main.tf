@@ -94,3 +94,61 @@ resource "aws_instance" "this" {
     Name = "${var.project_name}-ec2"
   }
 }
+
+# --- Phase 2: RDS(PostgreSQL) ---
+
+# DB subnet groupは（シングルAZ構成でも）異なるAZの複数サブネットが必須
+resource "aws_db_subnet_group" "this" {
+  name       = "${var.project_name}-db-subnet-group"
+  subnet_ids = data.aws_subnets.default.ids
+
+  tags = {
+    Name = "${var.project_name}-db-subnet-group"
+  }
+}
+
+resource "aws_security_group" "rds" {
+  name        = "${var.project_name}-rds-sg"
+  description = "Phase2: allow PostgreSQL(5432) from the EC2 security group only"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    description     = "PostgreSQL from EC2 only"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.this.id]
+  }
+
+  tags = {
+    Name = "${var.project_name}-rds-sg"
+  }
+}
+
+resource "aws_db_instance" "this" {
+  identifier     = "${var.project_name}-db"
+  engine         = "postgres"
+  engine_version = "17"
+
+  instance_class    = var.rds_instance_class
+  allocated_storage = 20
+  storage_type      = "gp2"
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = var.db_password
+
+  db_subnet_group_name   = aws_db_subnet_group.this.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  publicly_accessible    = false
+  multi_az                = false
+
+  backup_retention_period = 0
+  skip_final_snapshot     = true
+  deletion_protection     = false
+  apply_immediately       = true
+
+  tags = {
+    Name = "${var.project_name}-db"
+  }
+}
