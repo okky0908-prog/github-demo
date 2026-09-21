@@ -12,3 +12,8 @@ output "ssh_command" {
   description = "SSH接続コマンドの例"
   value       = "ssh -i ~/.ssh/github-demo-aws-ec2 ec2-user@${aws_instance.this.public_ip}"
 }
+
+output "rds_endpoint" {
+  description = "RDSのエンドポイント（ホスト名:ポート）。EC2からのみ接続可能"
+  value       = aws_db_instance.this.endpoint
+}
