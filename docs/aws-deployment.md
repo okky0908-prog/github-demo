@@ -130,60 +130,75 @@ terraform -version
 
 一気にすべてのリソースを作るのではなく、以下の順番で1つずつ構築・動作確認しながら進める。**各Phaseの完了を確認してから、次のPhaseに進むかどうかを都度確認する。**
 
-### Phase 1: EC2のみ構築（今回の対象）
+### Phase 1: EC2のみ構築 ✅完了
 
 - **目的**：TerraformでEC2インスタンスを立てられること、SSH接続やHTTPアクセスができることを確認する。アプリ本体のデプロイ・DBはまだ行わない
-- **Terraformで作成するリソース**：`aws_instance`（EC2本体、`t2.micro`/`t3.micro`、パブリックIP自動割り当て、`user_data`でnginxを自動インストール・起動）、`aws_security_group`（80/22番のみ許可）、`aws_key_pair`（SSH鍵）
-- **確認内容**：SSHでインスタンスに接続できること。80番ポートへのHTTPアクセスで、**nginxのデフォルトページ（`Welcome to nginx!`）が表示される**ことを確認する
-- ※Elastic IP（`aws_eip`）は無料枠を最優先する方針のため作成しない
+- **Terraformで作成したリソース**：`aws_instance`（EC2本体、`t3.micro`、パブリックIP自動割り当て、`user_data`でnginxを自動インストール・起動）、`aws_security_group`（80/22番のみ許可）、`aws_key_pair`（SSH鍵）
+- **確認内容**：SSHでインスタンスに接続できること。80番ポートへのHTTPアクセスで、nginxのデフォルトページ（`Welcome to nginx!`）が表示されることを確認した
+- ※Elastic IP（`aws_eip`）は無料枠を最優先する方針のため作成していない
 
-### Phase 2: RDS追加（次のステップ）
+### Phase 2: RDS追加 ✅完了
 
 - **目的**：EC2からRDS（PostgreSQL）へ接続できることを確認する
-- **Terraformで作成するリソース**：`aws_db_instance`（RDS本体、`db.t2.micro`/`db.t3.micro`、シングルAZ）、RDS用`aws_security_group`（EC2のSGからの5432番のみ許可）、`aws_db_subnet_group`
-- **IAMポリシーの追加が必要**：現在のIAMユーザーのポリシー（`TerraformMinimalEc2Deploy`）はEC2関連のみの権限のため、RDS関連の権限（`rds:CreateDBInstance`等）を追加する必要がある。このタイミングで改めて対応する
-- **確認内容**：EC2インスタンスにSSHで入り、`psql`等でRDSへの疎通を確認する
+- **Terraformで作成したリソース**：`aws_db_instance`（RDS本体、`db.t3.micro`、シングルAZ、PostgreSQL 17）、RDS用`aws_security_group`（EC2のSGからの5432番のみ許可、CIDRではなくセキュリティグループ経由で参照）、`aws_db_subnet_group`
+- **IAMポリシーの追加**：`TerraformMinimalEc2Deploy`（EC2関連のみ）に加え、RDS作成・削除・変更のみに絞った`TerraformRdsDeploy`ポリシーを新規作成し、`okky`にアタッチした（絞った権限のIAMユーザーは自分自身の権限を拡張できないため、AWSコンソールのCloudShell＋ルートユーザーで一度だけ`aws iam create-policy`・`attach-user-policy`を実行）
+- **確認内容**：
+  - EC2インスタンスにSSHで入り、`psql`（`dnf install postgresql15`で導入）でRDS（PostgreSQL 17.9）へ接続し、`SELECT`が実行できることを確認した
+  - ローカルPC（EC2外）から同じRDSエンドポイントの5432番ポートへは接続できない（`nc -z`でタイムアウト）ことを確認し、「EC2からのみ接続可能」という設計を実地で検証した
 
-### Phase 3: アプリケーションのデプロイ（最終ステップ）
+### Phase 3: アプリケーションのデプロイ ✅完了
 
 - **目的**：実際にブラウザからアプリ（フロントエンド・バックエンド）が使え、RDSにデータが保存されることを確認する
-- フロントエンド・バックエンドのビルド成果物をEC2に配置し、RDSの接続情報を設定してアプリを起動する（メモリ対策のスワップファイル作成もこのタイミングで行う）
-- ここまで確認できれば、一連のデプロイが完了
+- **ビルド方式の決定**：EC2の実測空きメモリが291MB/916MB（スワップ未設定）しかなく、EC2上でのNode.js/Gradleビルドはリスクが高いと判断し、**ローカル（Mac）でビルドし、成果物のみをEC2へscpで配置する**方式を採用した。Terraform（`terraform apply`）はサーバー環境の準備までを担当し、アプリのビルド・配布は別スクリプト`infra/deploy.sh`が担当する役割分担とした
+- **`infra/user_data.sh`に追加した内容**（EC2起動時に自動実行）：
+  - `java-25-amazon-corretto`のインストール（Amazon Linux 2023の標準パッケージに存在することを事前に確認済み）
+  - JVM起動時のメモリ不足に対する安全弁として、1GBのスワップファイルを作成・永続化
+  - nginxの`conf.d/app.conf`を新規作成し、静的ファイル配信（`/usr/share/nginx/html`）と`/api`配下のリバースプロキシ（`127.0.0.1:8080`）を設定
+  - `trello-backend.service`（systemdユニット）を作成・`enable`（起動はまだしない。jar・環境変数ファイルが存在しないため）。JVMオプションで`-Xmx192m`等のヒープ上限とスレッド数上限（`server.tomcat.threads.max=10`）を明示し、1GBメモリのインスタンスでも安定稼働するようにした
+- **新規`infra/deploy.sh`**（ローカルのMacで手動実行。Terraformの一部ではない）：
+  1. `./gradlew bootJar`・`npm run build`でローカルビルド
+  2. `terraform output`からEC2のIP・RDSのエンドポイント・DB名・ユーザー名を取得し、DBパスワードは`terraform.tfvars`から読み取る
+  3. フロントエンドの静的ファイルをnginxの配信ディレクトリへ、バックエンドのjarを`/opt/trello/backend.jar`へscp
+  4. RDS接続情報を`/opt/trello/backend.env`としてEC2上に生成（パスワードがコマンドライン引数に残らないようSSH標準入力経由で書き込み）
+  5. `systemctl restart trello-backend`で起動
+- **確認結果**：
+  - `http://<EC2のIP>/` → フロントエンド（React）の画面がステータス200で表示される
+  - `http://<EC2のIP>/api/cards` → RDSのシードデータ7件がJSONで返る（フロント→nginx→バックエンド→RDSまで一気通貫で疎通していることを確認）
+  - バックエンドの実メモリ使用量は約248MB、システム全体で149MB以上の空きを確認でき、スワップの使用も67MB程度に収まっており、想定した構成で安定稼働することを確認した
+- **分かったこと**：アプリの起動には約15秒かかるため、デプロイ直後すぐに動作確認すると一時的に`502 Bad Gateway`になることがある（起動待ちのタイミングの問題であり、障害ではない）
 
-## 4. Terraformコードの構成（Phase 1時点）
+## 4. Terraformコードの構成（Phase 3完了時点）
 
 ```
 infra/
-├── main.tf           # provider設定、EC2・SG・キーペアのリソース定義
-├── variables.tf       # リージョン・インスタンスタイプ等の変数
-├── outputs.tf          # 作成後に表示するEC2のIPアドレス等
-├── user_data.sh         # EC2起動時に自動実行するスクリプト（nginxのインストール・起動）
-└── terraform.tfvars    # 実際の値（.gitignore対象）
+├── main.tf                    # provider設定、EC2・SG・キーペア・RDS・DBサブネットグループのリソース定義
+├── variables.tf                # リージョン・インスタンスタイプ・DB接続情報等の変数
+├── outputs.tf                   # EC2のIP・RDSエンドポイント・DB名/ユーザー名等
+├── user_data.sh                  # EC2起動時に自動実行するスクリプト（nginx・Javaのインストール、スワップ作成、リバースプロキシ設定、systemdユニット登録）
+├── deploy.sh                      # ローカルでアプリをビルドしEC2へデプロイするスクリプト（Terraformの一部ではない。手動実行）
+├── terraform.tfvars.example        # tfvarsのテンプレート
+└── terraform.tfvars               # 実際の値（.gitignore対象）
 ```
 
-Phase 1の`user_data.sh`は、nginxのインストール・起動のみを行う（動作確認用）。アプリ本体のビルド・デプロイの仕組みはまだ含めない。RDS関連のファイル（Phase 2）、アプリのデプロイ・nginxのリバースプロキシ設定（Phase 3）は、それぞれのPhaseに着手する時点で追加する。
-
-- `.gitignore`に`*.tfstate`・`*.tfstate.backup`・`.terraform/`・`terraform.tfvars`を追加する（秘密情報・環境固有情報を含むため）
+- `.gitignore`に`*.tfstate`・`*.tfstate.backup`・`.terraform/`・`terraform.tfvars`を追加している（秘密情報・環境固有情報を含むため）
 - stateは当面ローカル保存とし、S3バックエンドへの移行は必要になった時点で検討する
 
-## 5. Phase 1（EC2構築）の作業の流れ
+## 5. 作業の流れ（実績）
 
-1. AWSマネジメントコンソールの「Free Tier」ページで無料利用枠の対象・有効期限を確認する（0-1章、未実施であれば）
-2. [CLAUDE.md](../CLAUDE.md)の運用ルールに従い、Issue作成 → `feat/xx-aws-terraform-ec2`等のブランチ作成
-3. `infra/`配下にPhase 1分（EC2・セキュリティグループ・キーペアのみ）のTerraformコードを作成
-4. `terraform init` → `terraform plan`（差分確認、無料枠に収まる内容か再確認） → `terraform apply`
-5. SSH接続・（必要なら簡易HTTPレスポンスで）80番ポートへのアクセスを確認する
-6. 問題なければPR作成 → マージ
-7. Phase 2（RDS追加）に進むかどうかをあらためて確認してから着手する
-8. 不要時は`terraform destroy`でリソースを削除し、課金停止を確認する
+1. AWSマネジメントコンソールの「Free Tier」ページで無料利用枠の対象・有効期限を確認
+2. [CLAUDE.md](../CLAUDE.md)の運用ルールに従い、Phaseごとに Issue作成 → ブランチ作成 → `infra/`にTerraformコードを追加 → `terraform init`/`plan`/`apply` → 動作確認 → PR作成 → マージ、を繰り返した（Phase1: EC2、Phase2: RDS追加、Phase3: アプリデプロイ）
+3. Phase 3のみ、Terraform適用後に追加で`./infra/deploy.sh`（ローカルビルド＋scp配置）を実行する必要がある
+4. 作業を中断する際は`terraform destroy`でリソースを削除し、課金停止を確認する（再開時は`terraform apply`→`./infra/deploy.sh`の順で環境を再現できる）
 
 ## 未決定事項
 
 - AWS公開に伴う[非機能要件](./non-functional-requirements.md)・[技術スタック](./tech-stack.md)の更新タイミング（デプロイ実装と同時に行うか、別途行うか）
 - Terraform stateのリモートバックエンド（S3）への移行要否
 - 実際のアカウントの無料利用枠有効期限（着手時にコンソールで確認する）
-- Phase 2着手時に、IAMユーザーのポリシー（`TerraformMinimalEc2Deploy`）へRDS関連の権限を追加する必要がある
+- MFAの実際の登録（QRコードでのデバイス有効化）が未完了（権限のみ付与済み）
 
 ## 解決済み事項（参考）
 
-- Terraform用IAMユーザーの権限方針：**絞った権限**を採用し、`TerraformMinimalEc2Deploy`ポリシー（EC2・セキュリティグループ・キーペアのみ）に設定済み
+- Terraform用IAMユーザーの権限方針：**絞った権限**を採用。EC2用`TerraformMinimalEc2Deploy`、RDS用`TerraformRdsDeploy`、MFA自己管理用`SelfManageMFA`の3ポリシーを個別にアタッチ（サービスごとに権限を分離）
+- フロントエンド・バックエンドのビルド場所：**ローカル（Mac）でビルドし、成果物のみをEC2にscpで配置する**方式を採用（EC2の低メモリでのビルドを避けるため）
+- nginxの採用：課題の参考動画に合わせ、最終構成でもnginxを静的ファイル配信・リバースプロキシとして使用する
