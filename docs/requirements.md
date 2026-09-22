@@ -72,3 +72,7 @@ Board・List・Cardの1:N構造とする。将来の複数ボード対応を見�
 - フロントエンド〜バックエンド間のAPI仕様（エンドポイント設計等）
 
 上記は [画面仕様・画面遷移・ユースケース](./screens.md)・[データ構造・ER図](./database.md) を踏まえ、詳細設計フェーズで決定する。
+
+## 11. インフラ構成（AWS）
+
+学習目的として、Terraform・AWS CLIを用いたAWS（EC2 + RDS + nginx）へのデプロイを行った。詳細は [インフラ構成](./infrastructure.md) を参照。
