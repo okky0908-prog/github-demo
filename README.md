@@ -32,6 +32,7 @@
 ├── frontend/   # React + Vite フロントエンド（SPA）
 ├── docs/       # 要件定義・設計ドキュメント
 ├── mockup/     # 実装前に作成した静的HTML/CSS/JSモックアップ
+├── infra/      # AWSデプロイ用のTerraformコード・デプロイスクリプト
 └── docker-compose.yml   # ローカルPostgreSQL起動用
 ```
 
@@ -87,6 +88,7 @@ npm run dev
 | [非機能要件](docs/non-functional-requirements.md) | 性能・可用性・セキュリティ等 |
 | [技術スタック](docs/tech-stack.md) | 採用技術とバージョン、選定理由 |
 | [モックアップ実装計画書](docs/mockup-plan.md) | 本実装前に作成した静的モックアップの内容 |
+| [インフラ構成（AWS）](docs/infrastructure.md) | AWSデプロイのインフラ構成図・設計方針 |
 
 ## 現在の進捗状況
 
@@ -101,6 +103,7 @@ npm run dev
 - [x] カードの削除API・画面（物理削除）
 - [x] カード作成・編集時のステータス（所属リスト）直接指定
 - [x] リストごとのカードソート機能（手動／優先度順／期限順）
+- [x] AWS（EC2 + RDS + nginx）へのデプロイ（Terraform + AWS CLIベース、詳細は[インフラ構成](docs/infrastructure.md)を参照）
 - [ ] リストの作成・編集・削除API・画面
 
 ## 開発ルール
