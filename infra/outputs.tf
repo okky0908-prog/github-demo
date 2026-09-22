@@ -17,3 +17,13 @@ output "rds_endpoint" {
   description = "RDSのエンドポイント（ホスト名:ポート）。EC2からのみ接続可能"
   value       = aws_db_instance.this.endpoint
 }
+
+output "db_name" {
+  description = "RDSのデータベース名"
+  value       = aws_db_instance.this.db_name
+}
+
+output "db_username" {
+  description = "RDSの管理者ユーザー名"
+  value       = aws_db_instance.this.username
+}
