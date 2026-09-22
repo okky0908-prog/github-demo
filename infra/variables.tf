@@ -48,4 +48,9 @@ variable "db_password" {
   description = "RDSの管理者パスワード（terraform.tfvarsで設定する。8文字以上）"
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = length(var.db_password) >= 8
+    error_message = "db_passwordは8文字以上で指定してください。"
+  }
 }

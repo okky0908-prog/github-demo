@@ -26,4 +26,5 @@ output "db_name" {
 output "db_username" {
   description = "RDSの管理者ユーザー名"
   value       = aws_db_instance.this.username
+  sensitive   = true
 }
